@@ -85,6 +85,12 @@ Fix everything the verification surfaces before declaring done.
 ## Phase 5 — Index + report
 
 - Ensure the landing `README.md` indexes everything and tells each audience where to start.
+- **Make the docs agent-discoverable (GEO).** The same small files + clear headings
+  that help a reader also help AI search/agents retrieve and summarize. Use the real
+  category/stack terms in the landing description so an agent can match what someone
+  is looking for, and — when the docs are/will be published — add an
+  [`llms.txt`](https://llmstxt.org/) at the root: a curated Markdown map linking the
+  key pages (the GEO analog of `sitemap.xml`).
 - Tell the user: where the docs live, the file tree, that they're per-section (help-function-ready), and **any caveats you found** — especially contradictions between existing docs/comments and the code (surface them; offer to fix the code separately rather than silently papering over them).
 
 ## Principles
