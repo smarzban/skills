@@ -13,9 +13,10 @@ content is portable across agents even where the packaging differs.
 
 ## Plugin: `agent-sdlc`
 
-A planning pipeline that takes an idea to build-ready, plus skills for writing the
-project's docs. See [`agent-sdlc/README.md`](agent-sdlc/README.md) for the full
-pipeline and the traceability spine that runs through it.
+A pipeline that takes an idea to a reviewed PR — plan it, build it test-first,
+open the PR — plus skills for writing the project's docs. See
+[`agent-sdlc/README.md`](agent-sdlc/README.md) for the full pipeline and the
+traceability spine that runs through it.
 
 | Skill | What it does |
 |---|---|
@@ -26,6 +27,8 @@ pipeline and the traceability spine that runs through it.
 | `techstack` | Turn the design into concrete product/library choices. |
 | `plan` | Turn it all into an atomic, agent-executable task plan. |
 | `gate` | Read-only: walk the whole chain before any code. |
+| `build` | Execute the plan test-first, one subagent per task, to a green branch. |
+| `ship` | Open a PR from the spec and hand it to review-gate. |
 | `writing-readmes` | Write/overhaul a project's front-door `README.md`. |
 | `writing-repo-docs` | Write/overhaul full source-grounded repository documentation. |
 
@@ -71,7 +74,7 @@ skills/                              ← repo root = a marketplace for two tools
     ├── .claude-plugin/plugin.json
     ├── .cursor-plugin/plugin.json
     ├── README.md
-    └── skills/<name>/SKILL.md        ← 9 skills
+    └── skills/<name>/SKILL.md        ← 12 skills
 ```
 
 ## Adding a skill

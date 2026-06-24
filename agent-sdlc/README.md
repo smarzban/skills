@@ -1,12 +1,12 @@
 # Agent SDLC
 
-A planning pipeline for AI coding agents. Agent SDLC takes an idea to the point where an agent can
-build it autonomously and well: settled intent, a checkable contract, a sound architecture, a
-grounded stack, and an atomic task plan, with a read-only gate that confirms it all hangs together
-before a line of code is written.
+A pipeline for AI coding agents that takes an idea to a reviewed pull request. The front half
+settles intent, a checkable contract, a sound architecture, a grounded stack, and an atomic task
+plan, with a read-only gate that confirms it all hangs together before a line of code is written.
+The back half executes it: `build` runs the plan test-first — one fresh subagent per task, green
+between each — and `ship` opens the reviewed PR.
 
-It is the front half of the lifecycle. Build, test, and deploy are downstream and extend the same
-chain (the gate already guards build; the task plan feeds it).
+Test and deploy are the next stages downstream, extending the same chain.
 
 The bundle also ships two standalone documentation skills — `writing-readmes` and
 `writing-repo-docs` — for the downstream job of documenting what you build. They sit outside the
@@ -34,6 +34,8 @@ code rather than during it.
 | `techstack` | `/agent-sdlc:techstack` | you, agent proposes | `## Tech Stack` |
 | `plan` | `/agent-sdlc:plan` | agent | `## Plan` (atomic tasks) |
 | `gate` | `/agent-sdlc:gate` | automated (read-only) | `gate-report.md` |
+| `build` | `/agent-sdlc:build` | agent | product code (a green branch) + `build-report.md` |
+| `ship` | `/agent-sdlc:ship` | agent | a reviewed PR (invokes `review-gate`) |
 | `getting-started` | auto / `/agent-sdlc:getting-started` | router | this is the entry point |
 
 Start with `getting-started`; it routes you to the right stage and states the shared rules.
@@ -69,7 +71,10 @@ agent-sdlc/
     ├── techstack/SKILL.md
     ├── plan/SKILL.md
     ├── gate/SKILL.md
+    ├── build/                         ← SKILL.md + reference/ (subagent-loop · tdd · source-driven · simplicity · debugging)
+    ├── ship/                          ← SKILL.md + reference/finishing.md
     ├── getting-started/SKILL.md
+    ├── linear-sync/                   ← SKILL.md + reference/mapping.md (optional engine)
     ├── writing-readmes/SKILL.md       ← documentation skill
     └── writing-repo-docs/SKILL.md     ← documentation skill
 ```
@@ -79,17 +84,21 @@ A run produces, per feature:
 ```
 specs/<feature>/
 ├── <feature>.md      ← ## Brief · ## Acceptance Criteria · ## Design · ## Tech Stack · ## Plan
-└── gate-report.md    ← gate output (read-only)
+├── gate-report.md    ← gate output (read-only)
+└── build-report.md   ← build output (the resumable task ledger)
 ```
 
 plus, at project level, `specs/overview.md` (`## Overview` · `## Architecture` · `## Tech Stack`)
 and `specs/adr/` for decision records, and root-level `constitution.md` + `CONTEXT.md` (glossary).
+`build` then lands the code on a feature branch and `ship` opens the reviewed PR — neither edits the
+spec.
 
 ## Linear sync (optional)
 
 Agent SDLC can mirror each stage into [Linear](https://linear.app) as you go — initiative (product)
-→ project (feature) → milestone (build phase) → issue (task) — driven by the `linear-sync` skill.
-It's **off by default**; enable it by setting `linear.enabled: true` in `.agent-sdlc/config.json`
+→ project (feature) → milestone (build phase) → issue (task) — driven by the `linear-sync` skill. As
+you build and ship, the `T-N` issues advance (Backlog → In Progress → In Review → Done) and the PR
+is attached to them. It's **off by default**; enable it by setting `linear.enabled: true` in `.agent-sdlc/config.json`
 (with the product's `initiative` and `team`). When the Linear MCP isn't connected, the steps are
 skipped, so an Agent SDLC run never depends on it.
 
