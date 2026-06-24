@@ -43,12 +43,13 @@ step.
    immediately.
 8. **Settle and write the artifact** present the settled problem, scope, non-goals, chosen
    approach, and resolved decisions in sections scaled to complexity, and get approval. Where it
-   lands depends on the level (see Two levels): a **feature** writes `specs/<feature>/brief.md`; a
-   **project** writes `specs/overview.md` and seeds root-level `constitution.md` and `CONTEXT.md`.
-   Either way, keep it out of the repo's product `docs/`.
+   lands depends on the level (see Two levels): a **feature** writes the `## Brief` section of
+   `specs/<feature>/<feature>.md` and appends the feature to `overview.md`'s feature list; a
+   **project** writes the `## Overview` section of `specs/overview.md` and seeds root-level
+   `constitution.md` and `CONTEXT.md`. Either way, keep it out of the repo's product `docs/`.
 9. **Hand off** for a **feature**, tell the user it is ready for the acceptance-criteria step. For
    a **project**, hand back the feature list and offer to shape the first feature next (its own
-   `specs/<feature>/` pass). Do not start the next step yourself.
+   `specs/<feature>/<feature>.md` pass). Do not start the next step yourself.
 
 ## Principles
 
@@ -78,8 +79,9 @@ A short file containing only:
 - **Glossary terms touched**
 - **Any ADRs**
 
-No requirements, no success criteria, no design detail. Those are the next stage. At **project**
-level the same shape applies to `specs/overview.md`, plus the feature decomposition (the list of
+No requirements, no success criteria, no design detail. Those are the next stage. This content is
+the `## Brief` section of `specs/<feature>/<feature>.md`. At **project** level the same shape is
+the `## Overview` section of `specs/overview.md`, plus the feature decomposition (the list of
 features the project breaks into).
 
 ## Two levels: project vs feature
@@ -88,7 +90,7 @@ The same skill runs at two scopes, decided in step 2.
 
 **Project** (clean repo, "I want to build an app for X"): you are shaping the whole project.
 Outputs are the north-star plus the breakdown into features:
-- `specs/overview.md` problem, scope, overall shape, and the feature decomposition
+- `specs/overview.md` `## Overview` problem, scope, overall shape, and the feature decomposition
 - `constitution.md` (root) standing principles, seeded here
 - `CONTEXT.md` (root) the initial glossary
 
@@ -96,23 +98,21 @@ A project pass ends by handing over the feature list; each feature is then its o
 pass.
 
 **Feature** (existing project, "I want to add X"): you are shaping one piece:
-- `specs/<feature>/brief.md` this feature's settled intent (later joined by
-  `acceptance-criteria.md`, `design.md`, `techstack.md`, and `plan.md` in the same folder).
+- the `## Brief` section of `specs/<feature>/<feature>.md` — this feature's settled intent (later
+  joined by the `## Acceptance Criteria`, `## Design`, `## Tech Stack`, and `## Plan` sections in
+  the same file).
 
 Layout:
 ```
 /
-├── CONTEXT.md            ← glossary, project-wide
-├── constitution.md       ← standing principles
-├── docs/adr/             ← decision records
+├── constitution.md          ← standing principles (project-wide)
+├── CONTEXT.md               ← glossary (project-wide)
 └── specs/
-    ├── overview.md       ← project-level idea output
+    ├── overview.md          ← project tier: ## Overview · ## Architecture · ## Tech Stack
+    ├── adr/                 ← decision records
     └── <feature>/
-        ├── brief.md
-        ├── acceptance-criteria.md   (next stage)
-        ├── design.md
-        ├── techstack.md
-        └── plan.md
+        ├── <feature>.md     ← ## Brief (here) · ## Acceptance Criteria · ## Design · ## Tech Stack · ## Plan
+        └── gate-report.md   ← gate output
 ```
 
 ## Conventions
@@ -120,7 +120,7 @@ Layout:
 - `CONTEXT.md` is a glossary and nothing else, devoid of implementation detail, not a spec or
   scratchpad. It lives at the repo root (canonical vocabulary the whole repo shares). Create it
   lazily, when the first term is resolved.
-- ADRs live under `docs/adr/` and are created only when the three-part test above is met.
+- ADRs live under `specs/adr/` and are created only when the three-part test above is met.
 - If a `CONTEXT-MAP.md` exists at the root, the repo has multiple contexts; resolve terms in the
   context they belong to.
 - Keep the trigger distinct from any `brainstorming` skill you may also have installed, so this
