@@ -3,7 +3,7 @@ name: gate
 description: "Read-only consistency and coverage gate before build. Walks the full chain criterion -> component -> product -> task across the whole spec, flags orphans, gaps, constitution violations, and unresolved placeholders, severity-rates every finding, and routes each fix to the stage that owns it. Use AFTER plan and BEFORE build. Triggers: 'verify', 'analyze', 'is this ready to build', 'check coverage', 'spec consistency'. Modifies nothing; it reports."
 ---
 
-# Verify: walk the chain before anyone writes code
+# Gate: walk the chain before anyone writes code
 
 Confirm the spec is internally consistent and fully covered before build begins. Walk the chain
 from every acceptance criterion through the component that owns it, the product that realizes it,
@@ -11,9 +11,10 @@ and the tasks that build it, and report anything broken. This is a gate, not an 
 everything and changes nothing, routing each fix to the stage that owns it.
 
 <HARD-GATE>
-Reads `brief.md`, `acceptance-criteria.md`, `design.md`, `techstack.md`, `plan.md`,
-`constitution.md`, and `CONTEXT.md`. Writes only `specs/<feature>/verify-report.md`. Modifies NO
-other file, fixes NOTHING, writes no code and no plan. Findings are reported with the owning stage
+Reads the `## Brief`, `## Acceptance Criteria`, `## Design`, `## Tech Stack`, and `## Plan` sections
+of `specs/<feature>/<feature>.md` (plus `specs/overview.md` at project level), `constitution.md`,
+and `CONTEXT.md`. Writes only `specs/<feature>/gate-report.md`. Modifies NO other file, fixes
+NOTHING, writes no code and no plan. Findings are reported with the owning stage
 named, so the fix happens there and the gate stays trustworthy. The terminal action is a report and
 a verdict: ready to build, or not.
 </HARD-GATE>
@@ -34,8 +35,8 @@ a verdict: ready to build, or not.
 
 ## Checklist (do in order)
 
-1. **Load every artifact** the whole `specs/<feature>/` chain plus root `constitution.md` and
-   `CONTEXT.md`.
+1. **Load every artifact** every section of `specs/<feature>/<feature>.md` plus `specs/overview.md`
+   and root `constitution.md` and `CONTEXT.md`.
 2. **Build the chain map** for each `AC-N`, assemble criterion -> component -> product -> task(s)
    from the artifacts.
 3. **Run the five checks** mechanically, not by impression. The value of this gate is the literal
@@ -44,7 +45,7 @@ a verdict: ready to build, or not.
 5. **Route each finding** name the owning stage that should fix it (criteria, design, techstack, or
    plan) and a suggested next action.
 6. **State the verdict** ready to build only if there are no Critical or High findings.
-7. **Write `verify-report.md`** and stop. Do not fix anything.
+7. **Write `gate-report.md`** and stop. Do not fix anything.
 
 ## Principles
 
@@ -78,11 +79,11 @@ a verdict: ready to build, or not.
 - All five checks have run.
 - Every finding is severity-rated, located, owner-named, and given a next action.
 - A clear verdict is stated.
-- `verify-report.md` is written, and nothing else was modified.
+- `gate-report.md` is written, and nothing else was modified.
 
 ## The artifact (output)
 
-`specs/<feature>/verify-report.md`, containing only:
+`specs/<feature>/gate-report.md`, containing only:
 - **Chain coverage table** `AC-N` -> component -> product -> task(s), with gaps marked.
 - **Findings by severity** each with: location (which artifact and where), the issue, the owning
   stage, and a suggested next action.
@@ -90,8 +91,8 @@ a verdict: ready to build, or not.
 
 ## Conventions
 
-- Lives at `specs/<feature>/verify-report.md`. Read-only over every other artifact.
-- Run after `plan.md` exists and before build. Re-run after any fix until the verdict is clean.
+- Lives at `specs/<feature>/gate-report.md`. Read-only over every other artifact.
+- Run after the `## Plan` section exists and before build. Re-run after any fix until the verdict is clean.
 - Critical and High findings block build; the owning stage fixes them and the gate is re-run.
 - Mirrors spec-kit's analyze: a read-only consistency and coverage pass that modifies nothing.
 - Downstream consumer: the build stage proceeds only on a clean or explicitly accepted report.
