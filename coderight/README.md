@@ -78,15 +78,12 @@ A run produces, per feature:
 
 ```
 specs/<feature>/
-├── brief.md
-├── acceptance-criteria.md
-├── design.md
-├── techstack.md
-├── plan.md
-└── verify-report.md
+├── <feature>.md      ← ## Brief · ## Acceptance Criteria · ## Design · ## Tech Stack · ## Plan
+└── gate-report.md    ← gate output (read-only)
 ```
 
-plus root-level `constitution.md`, `CONTEXT.md` (glossary), and `docs/adr/` for decision records.
+plus, at project level, `specs/overview.md` (`## Overview` · `## Architecture` · `## Tech Stack`)
+and `specs/adr/` for decision records, and root-level `constitution.md` + `CONTEXT.md` (glossary).
 
 ## Install
 
