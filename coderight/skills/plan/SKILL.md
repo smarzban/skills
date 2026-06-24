@@ -11,8 +11,9 @@ carries the failing test to write first. The plan is complete enough for an agen
 context to follow. This is the one stage the agent owns end to end.
 
 <HARD-GATE>
-Input is `specs/<feature>/acceptance-criteria.md`, `design.md`, `techstack.md`, and
-`constitution.md`. Output is `specs/<feature>/plan.md`. Produce the plan and task breakdown only;
+Input is the `## Acceptance Criteria`, `## Design`, and `## Tech Stack` sections of
+`specs/<feature>/<feature>.md`, plus `constitution.md`. Output is the `## Plan` section of the same
+file. Produce the plan and task breakdown only;
 do NOT write the product code (the build stage executes the tasks). Each task specifies the test
 to write first, but the red-green-refactor loop runs in build, not here. If the inputs are
 inconsistent or a criterion has no clear path to a task, STOP and loop back to the owning stage (or
@@ -37,9 +38,9 @@ A task is done being written only when:
 
 ## Checklist (do in order)
 
-1. **Load inputs** read `acceptance-criteria.md`, `design.md`, `techstack.md`, root `CONTEXT.md`,
-   and `constitution.md`. If they contradict each other, loop back to the owning stage or run the
-   gate first.
+1. **Load inputs** read the `## Acceptance Criteria`, `## Design`, and `## Tech Stack` sections of
+   `specs/<feature>/<feature>.md`, root `CONTEXT.md`, and `constitution.md`. If they contradict each
+   other, loop back to the owning stage or run the gate first.
 2. **Derive tasks from the design** walk the components and their contracts; for each, produce the
    smallest tasks that build it up, test-first.
 3. **Order by dependency** a task may depend only on tasks before it. Foundations (contracts,
@@ -49,7 +50,7 @@ A task is done being written only when:
 5. **Check coverage both ways** every `AC-N` is advanced by at least one task (no gap), and every
    task traces to a criterion (no gold-plating).
 6. **Constitution Check** confirm no task implies a violation of a MUST principle.
-7. **Write `plan.md`** the ordered task list plus the task-to-criterion coverage map.
+7. **Write the `## Plan` section** the ordered task list plus the task-to-criterion coverage map.
 8. **Hand off** the plan goes to the gate, then build. A human "go" is optional;
    the gate is the real checkpoint.
 
@@ -89,11 +90,11 @@ A task is done being written only when:
 - Tasks are dependency-ordered.
 - Every criterion is covered by at least one task; no task is uncovered by a criterion.
 - The Constitution Check passes.
-- `plan.md` is written, with the coverage map.
+- the `## Plan` section is written, with the coverage map.
 
 ## The artifact (output)
 
-`specs/<feature>/plan.md`, containing only:
+The `## Plan` section of `specs/<feature>/<feature>.md`, containing only:
 - **Tasks** ordered, each with: ID (`T-1`, `T-2`, ...), title, exact files, the failing test to
   write first, the `AC-N` advanced, the component touched, and dependencies.
 - **Task-to-criterion coverage map** `AC-N` -> the tasks that advance it, so coverage is visible.
@@ -103,9 +104,9 @@ No product code. Build executes the tasks via red-green-refactor.
 
 ## Conventions
 
-- Lives at `specs/<feature>/plan.md`. Kept out of the repo's product `docs/`.
-- Reads `acceptance-criteria.md`, `design.md`, and `techstack.md` from the same folder; references
-  `AC-N` IDs and design component names.
+- Lives as the `## Plan` section of `specs/<feature>/<feature>.md`. Kept out of the repo's product `docs/`.
+- Reads the `## Acceptance Criteria`, `## Design`, and `## Tech Stack` sections of the same file;
+  references `AC-N` IDs and design component names.
 - Task IDs (`T-N`) are stable handles the gate and build reference.
 - This is feature-scoped; at project level it is the plan for the first feature after the
   project-level idea and architecture.
