@@ -98,7 +98,8 @@ The dispatch mechanics, the three subagent briefs, the bounded fix cycle, and le
 
 - Product code on a feature branch: one atomic, reviewed, green commit per task.
 - `specs/<feature>/build-report.md` — the resumable ledger: per task `T-N` its status (done /
-  in-progress / blocked), commit SHA, the `AC-N` advanced, and any blocker note. Mirrors
+  in-progress / blocked), commit SHA, the `AC-N` advanced, any blocker note, and any
+  deferred-shortcut ceilings (`SHORTCUT(T-N)`) the task left in the code. Mirrors
   `gate-report.md`'s role — process state beside the spec, never inside it.
 
 ## Conventions

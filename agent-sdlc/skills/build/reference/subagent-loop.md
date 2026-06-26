@@ -45,7 +45,10 @@ reflects reviewed code.
 **Brief contains:** the diff, the task's contract (the `AC-N`, the named files, the test it had to
 make pass), and the bearing global constraints. The reviewer runs the code, reads the changed files
 and their call-sites, and returns a verdict: spec met (does the diff satisfy `T-N`'s contract?) plus
-quality findings rated Critical / Important / Minor.
+quality findings rated Critical / Important / Minor. One axis is always in scope: **over-build** — an
+abstraction, indirection, layer, or dependency the `AC-N` did not call for, where a simpler form
+passes the same test. Flag it like any other finding; the cheapest code to review is the code that
+was never written.
 
 **Never tell the reviewer what not to flag.** "Treat X as minor", "don't worry about Y" — pre-judging
 disqualifies the review. State the contract and let it judge. Optionally add a **doubt lens**: a
@@ -65,7 +68,9 @@ grind.
 The conductor — not a subagent — verifies the green bar green (runs the full declared set — compile,
 test, lint, format-check — and reads the output itself, never trusting a subagent's reported test
 counts or pass/fail claim) and makes one atomic commit per task. One task = one commit. The message states the task and the `AC-N`
-(e.g. `feat(T-3): root resolver — advances AC-1`). Then updates the ledger.
+(e.g. `feat(T-3): root resolver — advances AC-1`). Then updates the ledger — including any
+`SHORTCUT(T-N)` markers the diff introduced, so deferred ceilings are recorded beside the task in
+`build-report.md` rather than buried in the code.
 
 ## Model selection (optional, platform-dependent)
 
