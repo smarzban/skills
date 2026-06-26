@@ -7,3 +7,6 @@
 *~
 .idea/
 .vscode/
+
+# Local agent context (private; not committed)
+CLAUDE.md
