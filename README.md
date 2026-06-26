@@ -1,10 +1,11 @@
 # skills
 
-A personal collection of reusable agent skills, packaged as an installable
-**plugin** for both [Claude Code](https://claude.com/claude-code) and
+A personal collection of reusable agent skills, packaged as installable
+**plugins** for [Claude Code](https://claude.com/claude-code) and
 [Cursor](https://cursor.com). One source of truth, dual-wrapped: the skills live
 in a standard `skills/<name>/SKILL.md` layout, and a thin manifest per tool makes
-the repo installable natively in each.
+the repo installable natively in each. (One plugin, `review-gate`, is Claude
+Code only — it ships a Node CLI.)
 
 A *skill* is a directory containing a `SKILL.md` (with `name` + `description`
 frontmatter) and optional supporting files. The `description` is what the agent
@@ -32,6 +33,22 @@ traceability spine that runs through it.
 | `writing-readmes` | Write/overhaul a project's front-door `README.md`. |
 | `writing-repo-docs` | Write/overhaul full source-grounded repository documentation. |
 
+## Plugin: `review-gate`
+
+A multi-model code-review **gate** plus a whole-repo **audit**. An agent
+orchestrates holistic reviews across diverse models; a deterministic spine owns
+the block/pass verdict and the trust boundary, so a steered or prompt-injected
+reviewer can't flip the gate. **Claude Code only** (it ships a Node CLI). See
+[`review-gate/README.md`](review-gate/README.md) and `review-gate/docs/`.
+
+| Skill | What it does |
+|---|---|
+| `review-gate` | Per-PR merge gate — multi-round, multi-model review with a deterministic pass/block verdict. |
+| `repo-audit` | Advisory whole-repo audit across code-health, docs, tests, observability, operability, UX, and over-engineering. |
+
+`agent-sdlc`'s `ship` skill invokes `/review-gate:review-gate` for PR review when
+it's installed, and degrades to a portable reviewer subagent when it isn't.
+
 ## Install
 
 The repo is both a Claude Code marketplace (`.claude-plugin/marketplace.json`)
@@ -43,6 +60,7 @@ and a Cursor marketplace (`.cursor-plugin/marketplace.json`), named
 ```text
 /plugin marketplace add smarzban/skills
 /plugin install agent-sdlc@smarzban-skills
+/plugin install review-gate@smarzban-skills    # Claude Code only
 ```
 
 Skills then trigger on their `description`, or invoke explicitly with the plugin
@@ -68,13 +86,17 @@ and `.cursor-plugin/` wrappers are simply ignored elsewhere.
 
 ```
 skills/                              ← repo root = a marketplace for two tools
-├── .claude-plugin/marketplace.json  ← Claude Code install index
-├── .cursor-plugin/marketplace.json  ← Cursor install index
-└── agent-sdlc/                       ← the plugin
+├── .claude-plugin/marketplace.json  ← Claude Code install index (both plugins)
+├── .cursor-plugin/marketplace.json  ← Cursor install index (agent-sdlc only)
+├── agent-sdlc/                       ← plugin 1 — the SDLC pipeline (dual-tool)
+│   ├── .claude-plugin/plugin.json
+│   ├── .cursor-plugin/plugin.json
+│   ├── README.md
+│   └── skills/<name>/SKILL.md        ← 12 skills
+└── review-gate/                      ← plugin 2 — review gate + audit (Claude only)
     ├── .claude-plugin/plugin.json
-    ├── .cursor-plugin/plugin.json
-    ├── README.md
-    └── skills/<name>/SKILL.md        ← 12 skills
+    ├── src/ · dist/ · bin/           ← deterministic CLI spine (dist committed)
+    └── skills/<name>/SKILL.md        ← 2 skills (review-gate, repo-audit)
 ```
 
 ## Adding a skill

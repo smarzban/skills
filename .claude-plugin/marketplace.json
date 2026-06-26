@@ -10,6 +10,11 @@
       "name": "agent-sdlc",
       "source": "./agent-sdlc",
       "description": "Full-SDLC pipeline for AI coding agents: idea -> acceptance criteria -> architecture -> techstack -> atomic task plan -> readiness gate -> test-first subagent-driven build -> reviewed PR, plus skills for writing the project README and full repository documentation."
+    },
+    {
+      "name": "review-gate",
+      "source": "./review-gate",
+      "description": "Multi-model code-review gate + whole-repo audit (two skills: review-gate, repo-audit). An agent orchestrates holistic reviews across diverse models; a deterministic spine owns the block/pass verdict and the trust boundary, so a steered or prompt-injected reviewer can't flip the gate. Claude Code only (ships a Node CLI). Unversioned: tracks the default branch (git-SHA versioning), so every pushed commit is a release."
     }
   ]
 }
