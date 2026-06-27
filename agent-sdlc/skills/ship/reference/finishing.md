@@ -5,13 +5,16 @@ portable fallback, and the worktree rule.
 
 ## PR body — synthesized from the spec
 
-Build the PR title and body from `specs/<feature>/<feature>.md`, never from memory:
+Build the PR title and body from `specs/<feature>/<feature>.md` (and the `SHORTCUT` ceilings from
+`build-report.md`), never from memory:
 
 - **Title:** the feature name (concise), e.g. `feat: <feature>`.
 - **Body:**
   - **Summary** — the `## Brief` in a sentence or two.
   - **Acceptance criteria** — the `AC-N` list (the contract this PR claims to meet).
   - **Coverage** — the task→criterion map from the `## Plan`: which `T-N` advanced which `AC-N`.
+  - **Known compromises** — any `SHORTCUT(T-N)` ceilings recorded in `build-report.md` (the
+    deferred-but-bounded simplifications the build accepted); omit the section if there are none.
   - **Spec** — a link or path to `specs/<feature>/<feature>.md`.
 - Base branch: the project's default (e.g. `main`) unless configured otherwise.
 
@@ -27,6 +30,11 @@ review-gate is a **post-PR merge gate**. It checks out the PR branch in its own 
 against the base, runs its reviewers, and returns a deterministic verdict:
 
 - Invoke: `/review-gate:review-gate` against the open PR.
+- **Supply the spec explicitly.** review-gate's reviewers explore the checked-out worktree; a spec
+  that is gitignored or uncommitted is *absent* there, and the conformance (`lens-spec`) pass then
+  has nothing to check and silently returns empty. Pass the feature's `## Acceptance Criteria` (and
+  the design / ADRs) into the invocation so the contract review is real, not blind — never assume the
+  worktree contains the spec.
 - **Verdict vocabulary:** `pass` (no blocking findings) or `block` (blocking findings must be
   resolved or justified).
 - **Severity:** `critical` · `high` · `medium` gate (block); `low` · `info` are advisory.

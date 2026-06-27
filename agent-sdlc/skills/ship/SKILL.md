@@ -25,15 +25,19 @@ stops and asks before changing anything — a PR is an outward artifact.
    stop; do not push a red branch.
 3. **Push** push the feature branch to the remote.
 4. **PR** open it with `gh pr create`. Synthesize the title and body from the spec — the `## Brief`
-   summary, the `AC-N` list, the task→criterion coverage, and a link to the spec. (Mechanics +
-   template in [reference/finishing.md](reference/finishing.md).)
+   summary, the `AC-N` list, the task→criterion coverage, any `SHORTCUT(T-N)` ceilings the build
+   recorded in `build-report.md` (surface the known compromises so the reviewer sees them), and a
+   link to the spec. (Mechanics + template in [reference/finishing.md](reference/finishing.md).)
 5. **Linear** if sync is enabled in `.agent-sdlc/config.json`, attach the PR url to the feature's
    issues, post a project status update, and move the project to In Review — via the `linear-sync`
    skill.
-6. **Review** invoke `/review-gate:review-gate` on the open PR. It diffs the PR against the base,
-   reviews, posts a verdict comment, and returns **pass** or **block**. If review-gate is not
-   installed (e.g. Cursor/Codex without the Node CLI), fall back to a dispatched whole-PR reviewer
-   subagent and say so — the PR is still created and reviewed, by the portable path.
+6. **Review** invoke `/review-gate:review-gate` on the open PR, passing it the spec explicitly — the
+   `## Acceptance Criteria` and the design — because its reviewers explore the committed worktree,
+   where a gitignored or uncommitted spec is invisible and the conformance lens would otherwise check
+   against nothing. It diffs the PR against the base, reviews, posts a verdict comment, and returns
+   **pass** or **block**. If review-gate is not installed (e.g. Cursor/Codex without the Node CLI),
+   fall back to a dispatched whole-PR reviewer subagent and say so — the PR is still created and
+   reviewed, by the portable path.
 7. **Verdict** **pass** → report "PR ready, review-gate ✅" with the URL. **block** → surface the
    blocking findings and recommended fixes, then STOP and ask whether to dispatch fixers and
    re-push, or hand it back. Do not auto-loop on an outward artifact.
@@ -76,7 +80,8 @@ stops and asks before changing anything — a PR is an outward artifact.
 ## Done when
 
 - The suite is verified green and the branch is pushed.
-- A PR is open with a body synthesized from the spec (Brief, `AC-N` list, coverage, spec link).
+- A PR is open with a body synthesized from the spec (Brief, `AC-N` list, coverage, spec link) plus
+  any `SHORTCUT(T-N)` ceilings recorded in `build-report.md`.
 - review-gate (or the fallback reviewer) has returned a verdict, posted on the PR.
 - On pass: the PR URL and the ✅ verdict are reported. On block: findings surfaced and the user asked.
 - Linear PR attachment + project status update done where sync is enabled (or skipped cleanly).
