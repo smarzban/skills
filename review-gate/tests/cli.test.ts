@@ -149,6 +149,19 @@ describe("cli `decide` verb — empty-file adjudications + --prev flag (committe
     expect(decision.verdict).toBe("pass");
   });
 
+  it("an empty/`/dev/null` adjudications file CANNOT clear a GATING finding — it still blocks (fail-safe)", () => {
+    const gating = join(dir, "gating.json");
+    writeFileSync(gating, JSON.stringify([{
+      key: "a.ts::10::race", severity: "high", contested: false, members: [], agreement: { count: 1, total: 4 },
+      representative: { title: "race", severity: "high", file: "a.ts", line: 10, rationale: "r", suggestion: "s" },
+    }]));
+    for (const adj of ["/dev/null", empty]) {
+      const decision = JSON.parse(run(["decide", gating, adj, meta]));
+      expect(decision.verdict, adj).toBe("block");      // no dismissals → the high finding still blocks
+      expect(decision.blocking, adj).toHaveLength(1);
+    }
+  });
+
   it("accepts the previous-round set via --prev (order-independent, after meta)", () => {
     const prev = join(dir, "prev.json");
     writeFileSync(prev, JSON.stringify([{
@@ -203,5 +216,23 @@ describe("cli `collect` verb (committed dist/ artifact)", () => {
     expect(res.missing).toBe(2); // the opus non-vote file + the supplied one
     const meta = JSON.parse(readFileSync(join(dir, "meta.json"), "utf8"));
     expect(meta.missing).toContainEqual({ reviewer: "lens-security", model: "ollama:glm", reason: "backend skipped" });
+  });
+
+  it("rejects a non-positive-integer --round at the gatherer (not two steps later in decide)", () => {
+    for (const bad of ["abc", "0", "2.5", "-1"]) {
+      expect(() => run(["collect", dir, "--round", bad]), bad).toThrow();
+    }
+  });
+
+  it("rejects a malformed --missing ('reviewer|model|reason' required)", () => {
+    expect(() => run(["collect", dir, "--round", "1", "--missing", "onlyonefield"])).toThrow();
+  });
+
+  it("folds a --scan file in exactly once even when it also matches the out-*.json glob (dedup)", () => {
+    // out-scan.json is already globbed; passing it again via --scan must not double-count it
+    const res = JSON.parse(run(["collect", dir, "--round", "1", "--scan", join(dir, "out-scan.json")]));
+    const outputs = JSON.parse(readFileSync(join(dir, "outputs.json"), "utf8"));
+    expect(outputs.filter((o: { reviewer: string }) => o.reviewer === "tools")).toHaveLength(1);
+    expect(res.voted).toBe(1);
   });
 });

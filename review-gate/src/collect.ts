@@ -47,19 +47,27 @@ export function collect(
     if (isReviewerOutput(json.output)) {
       outputs.push(json.output);                                  // a vote — a model reviewer OR the scan
     } else if (json.output === null || json.output === undefined) {
-      // a non-vote: attribute the lost coverage from the envelope's top-level provenance + warning. The
-      // model string mirrors consolidate's "backend:model" so the Coverage line names it consistently.
-      const reviewer = json.reviewer;
-      const model = json.backend && json.model ? `${json.backend}:${json.model}` : json.model;
-      if (typeof reviewer !== "string" || !reviewer.trim() || typeof model !== "string" || !model.trim())
-        throw new Error(`collect: ${name} is a non-vote but carries no reviewer/model to attribute the lost coverage to`);
-      missing.push({ reviewer, model, ...(json.warning ? { reason: json.warning } : {}) });
+      // a non-vote: attribute the lost coverage from the envelope's top-level provenance + warning. We
+      // require `backend` AND `model` so the missing entry's model is ALWAYS `backend:model` — exactly
+      // how the same pass's VOTE would name it (runner.ts) — otherwise the Coverage line and any
+      // round-over-round key-match would diverge for a backend-less envelope. `run` always emits all three.
+      const { reviewer, backend, model } = json;
+      if (typeof reviewer !== "string" || !reviewer.trim() ||
+          typeof backend !== "string" || !backend.trim() ||
+          typeof model !== "string" || !model.trim())
+        throw new Error(`collect: ${name} is a non-vote but carries no reviewer/backend/model to attribute the lost coverage to`);
+      missing.push({ reviewer, model: `${backend}:${model}`, ...(json.warning ? { reason: json.warning } : {}) });
     } else {
       throw new Error(`collect: ${name} has a malformed "output" (neither a reviewer output nor null)`);
     }
   }
   if (opts.missing) missing.push(...opts.missing);
   const reviewers = outputs.filter((o) => !isTool(o)).map((o) => ({ reviewer: o.reviewer, model: o.model }));
+  // A roster with zero MODEL passes is not a review — decide rejects it anyway (meta.reviewers must be
+  // non-empty), so fail HERE, at the gatherer, with a clear cause instead of a confusing error two steps
+  // later. (All model passes failed, or only a scan was collected.)
+  if (reviewers.length === 0)
+    throw new Error("collect: no model reviewer votes — a review needs at least one model pass (did every pass fail, or was only a scan collected?)");
   const meta: RunMeta = {
     reviewers,
     ...(missing.length ? { missing } : {}),

@@ -45,7 +45,7 @@ read-only tools (Read/Grep/Glob + git read), told *"review this PR"* — it expl
 branch itself. Only you and the spine (trusted) act: persist, comment, set the merge status.
 
 Run the spine with the **`review-gate`** command — it's on your `PATH` once this plugin is installed,
-so call it from any directory: `review-gate <prompt|run|scan|consolidate|decide> …`. It also *serves
+so call it from any directory: `review-gate <prompt|run|scan|collect|consolidate|decide> …`. It also *serves
 its own reviewer prompts*: `review-gate prompt <name>` prints that prompt **plus its output contract**
 to stdout, so you never need a filesystem path to the prompt files.
 
@@ -166,8 +166,10 @@ blocking. The spine computes the verdict from what you collect — honest collec
      skims. **Silently skipping the lens evaluation is a sign-off failure, not a shortcut.**
    - Run reviewers as parallel background subprocesses (modest concurrency — a few at a time). **Save
      each call's full stdout to `/tmp/rg-wt-out/out-<id>.json`** (the whole `{reviewer, backend, model,
-     output, warning}` envelope, votes AND non-votes) and the `scan` output alongside it. Don't
-     hand-assemble the pool — `collect` (step 3a) does it deterministically.
+     output, warning}` envelope, votes AND non-votes) and the `scan` output to the **same dir as
+     `out-scan.json`** (it MUST match `out-*.json` for `collect` to fold it in, or pass it via `--scan
+     <f>` — a misnamed scan is silently absent, and the deterministic tier is the one you can't lose).
+     Don't hand-assemble the pool — `collect` (step 3a) does it deterministically.
 
 3a. **Collect:** `review-gate collect /tmp/rg-wt-out --round N [--scan <f>] [--missing 'reviewer|model|reason']`
    → writes `outputs.json` (→ consolidate) + `meta.json` (→ decide) into that dir. It reads reviewer/model

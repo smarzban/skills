@@ -107,7 +107,9 @@ async function main() {
                 process.stderr.write("usage: review-gate collect <dir> [--round N] [--scan <f>] [--missing 'reviewer|model|reason']\n");
                 process.exit(2);
             }
-            const names = readdirSync(dir).filter((n) => /^out-.*\.json$/.test(n)).sort().map((n) => join(dir, n));
+            const names = readdirSync(dir, { withFileTypes: true })
+                .filter((d) => d.isFile() && /^out-.*\.json$/.test(d.name)) // regular files only — a dir named out-x.json isn't a pass
+                .map((d) => join(dir, d.name)).sort();
             for (const s of flags.scan ?? [])
                 if (s)
                     names.push(s); // explicit scan file(s), if stored elsewhere
@@ -122,7 +124,16 @@ async function main() {
                     throw new Error(`collect: cannot parse ${p}: ${e instanceof Error ? e.message : String(e)}`);
                 }
             });
-            const round = flags.round?.[0] ? Number(flags.round[0]) : undefined;
+            // Validate --round at the gatherer (decide requires a positive integer): a bad value would
+            // otherwise be silently dropped (NaN/0 are falsy) or fail confusingly two steps later in decide.
+            let round;
+            if (flags.round?.[0] !== undefined && flags.round[0] !== "") {
+                round = Number(flags.round[0]);
+                if (!Number.isInteger(round) || round <= 0) {
+                    process.stderr.write(`collect: --round must be a positive integer (got ${JSON.stringify(flags.round[0])})\n`);
+                    process.exit(2);
+                }
+            }
             const missing = (flags.missing ?? []).filter(Boolean).map(parseMissing);
             const { outputs, meta } = collect(files, { round, missing });
             const outputsPath = join(dir, "outputs.json");

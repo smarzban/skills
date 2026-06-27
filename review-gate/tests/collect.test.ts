@@ -64,11 +64,20 @@ describe("collect", () => {
   });
 
   it("throws LOUD on a non-vote with no provenance to attribute the loss (never silently drops it)", () => {
-    expect(() => collect([{ name: "out-bad.json", json: { output: null } }])).toThrow(/no reviewer\/model/);
+    expect(() => collect([{ name: "out-bad.json", json: { output: null } }])).toThrow(/no reviewer\/backend\/model/);
+  });
+
+  it("throws on a non-vote missing `backend` — its model string would diverge from how a vote names it", () => {
+    expect(() => collect([{ name: "out-nb.json", json: { reviewer: "holistic", model: "kimi", output: null, warning: "x" } }]))
+      .toThrow(/reviewer\/backend\/model/);
   });
 
   it("throws on a malformed envelope (not an object / malformed output)", () => {
     expect(() => collect([{ name: "out-x.json", json: 42 as never }])).toThrow(/not a run\/scan envelope/);
     expect(() => collect([{ name: "out-y.json", json: { reviewer: "h", model: "m", output: { nope: true } as never } }])).toThrow(/malformed/);
+  });
+
+  it("throws on an empty model-reviewer roster (only a scan, or every pass failed) — fails at the gatherer, not two steps later", () => {
+    expect(() => collect([scan(["secrets.env"])])).toThrow(/no model reviewer votes/);
   });
 });
