@@ -79,6 +79,13 @@ export interface RunMeta {
    *  "Review Gate — Round N"; the Progress section (when `previous` is supplied to decide) compares
    *  against round N−1. Provenance/display only — like `reviewers`, it never enters the verdict. */
   round?: number;
+  /** Scan-tier (deterministic) warnings: a scanner that RAN but degraded — a sub-scan skipped because
+   *  its tool isn't installed (e.g. gitleaks absent → no secret scan), or any scanner warning. The scan
+   *  still votes (its other findings count, so it is NOT in `missing`), but a degraded fact-tier must be
+   *  as VISIBLE as a lost reviewer pass — else a skipped secret scan reads as "clean" (Episode 5 #2).
+   *  Display only — like the rest of meta, it never alters the verdict: graceful degradation, surfaced
+   *  not silenced. */
+  scanWarnings?: string[];
 }
 
 export type Verdict = "pass" | "block";

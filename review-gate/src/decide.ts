@@ -38,6 +38,13 @@ export function decide(clusters: FindingCluster[], adjudications: Adjudication[]
           throw new Error("decide: meta.missing reason must be a string when provided.");
       }
     }
+    if (meta.scanWarnings !== undefined) {
+      if (!Array.isArray(meta.scanWarnings))
+        throw new Error("decide: meta.scanWarnings must be an array of scan-tier warning strings when provided.");
+      for (const w of meta.scanWarnings)
+        if (typeof w !== "string" || !w.trim())
+          throw new Error("decide: each meta.scanWarnings entry must be a non-empty string.");
+    }
   }
   if (previous !== undefined) {
     if (!Array.isArray(previous))
@@ -180,6 +187,15 @@ function coverageLine(meta: RunMeta): string {
   return `⚠️ **Coverage:** ${voted}/${total} planned reviewer passes voted — lost: ${lost}`;
 }
 
+// Scan-tier degradation: a deterministic scanner RAN but skipped a sub-scan (its tool absent — e.g.
+// gitleaks → no secret scan) or otherwise warned. The scan still voted, so it is NOT in meta.missing,
+// but a degraded FACT tier must be as loud as a lost reviewer — else a skipped secret scan reads as
+// "clean" and the signing orchestrator writes "no secrets" (Episode 5 #2). Display only; never alters
+// the verdict (graceful degradation, surfaced not silenced). Sanitized — a warning carries tool stderr.
+function scanDegradedLine(meta: RunMeta): string {
+  return `🔍 **Scan tier degraded:** ${(meta.scanWarnings ?? []).map(sanitize).join("; ")}`;
+}
+
 // The round-over-round delta for the multi-round loop. `previous` is the PRIOR round's blocking
 // clusters (decide's own `blocking` output, fed back in). Compared by cluster key: a finding absent
 // at the re-reviewed HEAD is resolved, one still present persists, and a gating cluster not in the
@@ -226,6 +242,7 @@ export function renderComment(verdict: Verdict, clusters: FindingCluster[], bloc
   const parts = [heading, head, `\nFindings: ${clusters.length} total — ${tally}.`];
   if (meta) parts.push(reviewedBy(meta));
   if (meta?.missing?.length) parts.push(coverageLine(meta));
+  if (meta?.scanWarnings?.length) parts.push(scanDegradedLine(meta));
   if (previous) parts.push(renderProgress(progressSince(previous, clusters, blocking), meta?.round));
 
   const blk = bySeverity(blocking);

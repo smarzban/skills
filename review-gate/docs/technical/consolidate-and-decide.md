@@ -78,6 +78,10 @@ comment on every run** (a run history, never an in-place edit):
 - a severity tally (`N critical · N high · …`).
 - **Reviewed by** — the distinct passes (holistic first, then lenses) across the distinct model roster,
   from `meta.reviewers`. The only place a **clean** reviewer is credited.
+- **⚠️ Coverage** — planned reviewer passes with no usable vote this round (`meta.missing`): a thinned,
+  auth-failed, or non-voting panel, made loud so it can't pass silently. Display only.
+- **🔍 Scan tier degraded** — a deterministic scanner that ran but skipped a sub-scan (its tool absent,
+  e.g. gitleaks → no secret scan), from `meta.scanWarnings`. Display only — never changes the verdict.
 - **Must fix** (blocking), **Advisory (non-blocking)** (low/info).
 - **⚠️ Deterministic findings — override NOT honored** — any attempted tool dismissals, still blocking.
 - **Dismissed (with justification)** — honored model dismissals + their justifications.

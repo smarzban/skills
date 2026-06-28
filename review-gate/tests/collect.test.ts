@@ -80,4 +80,40 @@ describe("collect", () => {
   it("throws on an empty model-reviewer roster (only a scan, or every pass failed) — fails at the gatherer, not two steps later", () => {
     expect(() => collect([scan(["secrets.env"])])).toThrow(/no model reviewer votes/);
   });
+
+  // Episode 5 (#2): a scan that VOTED but carried a warning ran DEGRADED (a sub-scanner skipped — e.g.
+  // gitleaks absent). Its warning used to be dropped here (the scan output is a valid vote), so a
+  // skipped secret tier vanished from the verdict and read as "clean". Capture it into meta.scanWarnings.
+  it("captures a DEGRADED scan tier's warning into meta.scanWarnings (a skipped sub-scanner can't vanish)", () => {
+    const degradedScan: CollectInput = {
+      name: "out-scan.json",
+      json: { output: { reviewer: "tools", model: "deterministic", findings: [] }, warning: "secrets: gitleaks not on PATH — skipped (install gitleaks to enable secret scanning)" },
+    };
+    const { outputs, meta } = collect([vote("holistic", "ollama", "kimi", ["a.ts"]), degradedScan]);
+    expect(outputs.some((o) => o.reviewer === "tools")).toBe(true);                     // the scan still VOTES
+    expect(meta.reviewers).toEqual([{ reviewer: "holistic", model: "ollama:kimi" }]);   // still not a reviewer
+    expect(meta.scanWarnings).toEqual(["secrets: gitleaks not on PATH — skipped (install gitleaks to enable secret scanning)"]);
+    expect(meta.missing).toBeUndefined();                                               // a degraded scan is NOT a lost vote
+  });
+
+  it("a clean scan (no warning) yields no scanWarnings", () => {
+    const { meta } = collect([vote("holistic", "ollama", "kimi", ["a.ts"]), scan(["x.ts"])]);
+    expect(meta.scanWarnings).toBeUndefined();
+  });
+
+  // A lost reviewer (non-vote) and a degraded scan can happen in the SAME round — they travel different
+  // branches of the per-file loop, so pin that BOTH surface (distinct), not one masking the other.
+  it("a lost reviewer AND a degraded scan in one round BOTH surface (missing + scanWarnings, distinct)", () => {
+    const degradedScan: CollectInput = {
+      name: "out-scan.json",
+      json: { output: { reviewer: "tools", model: "deterministic", findings: [] }, warning: "secrets: gitleaks not on PATH — skipped" },
+    };
+    const { meta } = collect([
+      vote("holistic", "ollama", "kimi", ["a.ts"]),
+      nonVote("lens-spec", "claude", "claude-opus-4-8", "claude-opus-4-8: error_max_turns"),
+      degradedScan,
+    ]);
+    expect(meta.missing).toEqual([{ reviewer: "lens-spec", model: "claude:claude-opus-4-8", reason: "claude-opus-4-8: error_max_turns" }]);
+    expect(meta.scanWarnings).toEqual(["secrets: gitleaks not on PATH — skipped"]);
+  });
 });

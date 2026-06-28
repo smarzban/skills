@@ -232,6 +232,13 @@ const spawnCall = (backend, model, prompt, repoDir, timeoutMs) => {
  *  signal). NOT retryable: a timeout or byte-cap (deliberate guards — a retry just doubles GPU cost or
  *  re-hits the cap) and ENOENT (a missing binary is a config error, not flakiness). */
 const isTransientSpawnError = (msg) => !/timed out after|output exceeded|ENOENT/i.test(msg);
+/** Episode 5 (#1): a non-vote keeps a bounded TAIL of the model's raw reply so it's diagnosable from
+ *  its own saved envelope — was it pure prose (model behavior) or a buried array the salvage missed
+ *  (a parser bug)? The TAIL is kept (a findings array lands at the END of a reply) within a small cap so
+ *  a runaway reply can't bloat the envelope. Unfiltered, unlike `errorTail` (this is a faithful debug
+ *  artifact of what the model said, not a stderr summary). */
+const RAW_TAIL_MAX = 800;
+const rawTail = (t) => (t.length > RAW_TAIL_MAX ? t.slice(-RAW_TAIL_MAX) : t);
 /** Run ONE reviewer on ONE model+backend, in `repoDir` (the model explores the checked-out branch).
  *  Returns null + a warning on any failure so a dead/flaky model never throws the whole gate down — and
  *  that null still surfaces as lost coverage (the decide Coverage line), so a retry never masks a dead
@@ -252,7 +259,7 @@ export async function runReview(reviewer, backend, model, repoDir, prompt, opts 
                 // Name the harness error subtype (e.g. error_max_turns) so the Coverage line says WHY it was
                 // lost. Not retried — a determined max-turns repeats with the same cap; the raised cap is the fix.
                 if (r.isError)
-                    return { output: null, warning: `${tag}: ${r.subtype ?? "harness reported is_error"}` };
+                    return { output: null, warning: `${tag}: ${r.subtype ?? "harness reported is_error"}`, ...(r.resultText ? { rawTail: rawTail(r.resultText) } : {}) };
                 resultText = r.resultText;
             }
             let findings = parseFindings(resultText);
@@ -261,7 +268,7 @@ export async function runReview(reviewer, backend, model, repoDir, prompt, opts 
             if (findings === null && isAffirmativelyEmpty(resultText))
                 findings = [];
             if (findings === null)
-                return { output: null, warning: `${tag}: unparseable output` };
+                return { output: null, warning: `${tag}: unparseable output`, ...(resultText ? { rawTail: rawTail(resultText) } : {}) };
             return { output: { reviewer, model: `${backend}:${model}`, findings } };
         }
         catch (e) {

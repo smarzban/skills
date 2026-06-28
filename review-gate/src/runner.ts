@@ -241,6 +241,14 @@ const spawnCall: ModelCall = (backend, model, prompt, repoDir, timeoutMs) => {
  *  re-hits the cap) and ENOENT (a missing binary is a config error, not flakiness). */
 const isTransientSpawnError = (msg: string): boolean => !/timed out after|output exceeded|ENOENT/i.test(msg);
 
+/** Episode 5 (#1): a non-vote keeps a bounded TAIL of the model's raw reply so it's diagnosable from
+ *  its own saved envelope — was it pure prose (model behavior) or a buried array the salvage missed
+ *  (a parser bug)? The TAIL is kept (a findings array lands at the END of a reply) within a small cap so
+ *  a runaway reply can't bloat the envelope. Unfiltered, unlike `errorTail` (this is a faithful debug
+ *  artifact of what the model said, not a stderr summary). */
+const RAW_TAIL_MAX = 800;
+const rawTail = (t: string): string => (t.length > RAW_TAIL_MAX ? t.slice(-RAW_TAIL_MAX) : t);
+
 /** Run ONE reviewer on ONE model+backend, in `repoDir` (the model explores the checked-out branch).
  *  Returns null + a warning on any failure so a dead/flaky model never throws the whole gate down — and
  *  that null still surfaces as lost coverage (the decide Coverage line), so a retry never masks a dead
@@ -249,7 +257,7 @@ const isTransientSpawnError = (msg: string): boolean => !/timed out after|output
 export async function runReview(
   reviewer: string, backend: Backend, model: string, repoDir: string, prompt: string,
   opts: { call?: ModelCall; timeoutMs?: number } = {},
-): Promise<{ output: ReviewerOutput | null; warning?: string }> {
+): Promise<{ output: ReviewerOutput | null; warning?: string; rawTail?: string }> {
   const call = opts.call ?? spawnCall;
   const tag = `${reviewer}/${backend}:${model}`;
   for (let attempt = 1; attempt <= 2; attempt++) {
@@ -262,14 +270,14 @@ export async function runReview(
         const r = parseClaudeResult(stdout);
         // Name the harness error subtype (e.g. error_max_turns) so the Coverage line says WHY it was
         // lost. Not retried — a determined max-turns repeats with the same cap; the raised cap is the fix.
-        if (r.isError) return { output: null, warning: `${tag}: ${r.subtype ?? "harness reported is_error"}` };
+        if (r.isError) return { output: null, warning: `${tag}: ${r.subtype ?? "harness reported is_error"}`, ...(r.resultText ? { rawTail: rawTail(r.resultText) } : {}) };
         resultText = r.resultText;
       }
       let findings = parseFindings(resultText);
       // A completed run whose ENTIRE reply is an unambiguous "no issues" is a 0-findings vote, not a
       // failure — so a clean reviewer isn't mistaken for a dead one. Anything ambiguous stays null.
       if (findings === null && isAffirmativelyEmpty(resultText)) findings = [];
-      if (findings === null) return { output: null, warning: `${tag}: unparseable output` };
+      if (findings === null) return { output: null, warning: `${tag}: unparseable output`, ...(resultText ? { rawTail: rawTail(resultText) } : {}) };
       return { output: { reviewer, model: `${backend}:${model}`, findings } };
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);

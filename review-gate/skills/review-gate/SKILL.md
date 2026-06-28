@@ -113,28 +113,39 @@ blocking. The spine computes the verdict from what you collect — honest collec
      any reviewer. These are **exact tool detections** (conflict markers, focused tests, committed
      secrets/artifacts) — facts, not opinions; they are **not** sent to the models. Run it alongside
      the model pass; if it returns a blocking finding (e.g. a committed secret), you may **fast-fail**
-     the gate before paying for the models.
+     the gate before paying for the models. **A scanner whose tool is absent (e.g. gitleaks → no secret
+     scan) SKIPS with a warning, not a finding** — `collect` folds that into `meta.scanWarnings` and
+     `decide` renders a `🔍 Scan tier degraded` line, so a skipped secret/dependency scan is **loud in the
+     verdict**. NEVER write "scan clean / no secrets" when a scanner was skipped — that tier didn't run,
+     and claiming it did is a false sign-off (Episode 5).
    - **holistic × all four models** (the core pass) — e.g. `review-gate run holistic ollama kimi-k2.7-code:cloud …`,
      `… ollama glm-5.2:cloud …`, `… claude claude-opus-4-8 …`, `… codex gpt-5.5 …`.
      For the `claude`/opus reviewer, append a `Think hard about lifecycle/edge cases.` line to its
      prompt (high thinking). codex effort is set high by the runner.
-   - **Round N>1 = verification by a SINGLE model, not a fresh panel.** After fixing, run ONE model —
-     **`claude claude-opus-4-8` or `ollama glm-5.2:cloud`** (for now) — scoped to the prior-round
-     findings + `git diff <prevHead>...HEAD`: for EACH prior finding, does it still hold at HEAD, and
+   - **Round N>1 = verification by a SINGLE model, not a fresh panel.** After fixing, run ONE reviewer
+     from the roster — pick **whichever model reliably emits the clean-array contract on the verify
+     pass** (a non-vote wastes the round; see the guard below). Don't hard-wire a model: a model that
+     proses on verify today may be replaced tomorrow — the requirement is a clean-array voter, not a
+     name. Scope it to the prior-round findings + `git diff <prevHead>...HEAD`: for EACH prior finding, does it still hold at HEAD, and
      did a fix introduce a direct regression? **Do NOT ask it to re-scan the whole PR for new issues**
      — that re-opens discovery and the loop stops converging. Run the full deterministic `scan` every
      round regardless ($0). Escalate to a fuller panel only if a fix was large/risky — the exception.
      - **Build the verify prompt from `review-gate prompt verify`** — do NOT hand-write it. The built-in
-       template carries the *same clean-array output contract the lenses use* (which opus parses fine),
-       and puts the prior findings AFTER the contract. A hand-written verify prompt is what invites the
-       prose non-vote: a per-finding narrative above the contract, repeated inline `[]`/`{}` tokens, or a
-       trailing "think hard" line all pull a reasoning model into prose. Append the prior findings (and
-       the `git diff <prevHead>...HEAD` scope) after the emitted prompt — like `lens-spec` takes its spec.
-     - **Non-vote guard (still applies):** opus/glm are reasoning-heavy and a *hand-written* prompt can
-       still draw a pure-prose **non-vote** (`parseFindings` can't salvage a no-array reply). A verifier
-       non-vote is **NOT a clean pass** — it is zero coverage. Surface the `warning`, re-run (or fall back
-       to `codex gpt-5.5` / `ollama kimi-k2.7-code:cloud`). NEVER let an unparseable reply convert a
-       still-open finding into "resolved" or a `block` into `pass`.
+       template carries the *same clean-array output contract the lenses use* and puts the prior findings
+       AFTER it. This is necessary but **not sufficient**: a hand-written prompt makes a prose non-vote
+       MORE likely (a per-finding narrative above the contract, repeated inline `[]`/`{}` tokens, or a
+       trailing "think hard" line all pull a model into prose), but **even the built-in template can draw
+       an intermittent non-vote** — that's model behavior on the discursive "re-check these" task, not a
+       prompt defect (Episode 5). Append the prior findings (and the `git diff <prevHead>...HEAD` scope)
+       after the emitted prompt — like `lens-spec` takes its spec.
+     - **Non-vote guard (still applies):** ANY model can intermittently return a pure-prose **non-vote**
+       (`parseFindings` can't salvage a no-array reply) — reasoning-heavy ones more so on the discursive
+       verify task. A verifier non-vote is **NOT a clean pass** — it is zero coverage. Surface the
+       `warning` and re-run, or fall back to a **different roster model**. The saved non-vote envelope now
+       carries a **`rawTail`** (the tail of the model's actual reply) — read it to tell whether the model
+       prosed (model behavior → switch model) or emitted something the parser should have caught (a parser
+       bug → fix the spine), instead of guessing or re-running blind. NEVER let an unparseable reply
+       convert a still-open finding into "resolved" or a `block` into `pass`.
    - **Lenses are CONDITIONAL, not always-on** — a targeted backfill on 1–2 models, fired ONLY when
      (a) holistic came back **thin on that dimension** (a silence you don't trust — e.g. zero test
      findings on a PR that clearly needs tests), OR (b) the PR is **high-stakes for that dimension**
@@ -175,7 +186,9 @@ blocking. The spine computes the verdict from what you collect — honest collec
    → writes `outputs.json` (→ consolidate) + `meta.json` (→ decide) into that dir. It reads reviewer/model
    from file **contents** (filenames may vary), folds the scan into `outputs`, and derives `meta.missing`
    from every `output:null` file (reason = its `warning`) — so a thinned panel **can't** be silently
-   dropped from the Coverage line. Pass `--missing 'reviewer|model|reason'` only for a pass that produced
+   dropped from the Coverage line. It also folds a **degraded scan** (a scan that voted but carried a
+   warning — a skipped sub-scanner) into `meta.scanWarnings`, which `decide` renders as the `🔍 Scan tier
+   degraded` line. Pass `--missing 'reviewer|model|reason'` only for a pass that produced
    *no file at all* (a backend you planned then skipped, or a lens fired without its input — e.g. `lens-spec`
    with no spec). A malformed `out-*.json` makes `collect` fail loud rather than quietly thin the panel.
 

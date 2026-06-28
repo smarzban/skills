@@ -65,8 +65,10 @@ async function main() {
       // (reviewer × model) and collects the printed outputs. Untrusted: a model call.
       const [reviewer, backend, model, repoDir, promptFile] = args;
       const prompt = readFileSync(promptFile, "utf8");
-      const { output, warning } = await runReview(reviewer, backend as any, model, repoDir, prompt);
-      print({ reviewer, backend, model, output, warning: warning ?? null });
+      const { output, warning, rawTail } = await runReview(reviewer, backend as any, model, repoDir, prompt);
+      // rawTail is present ONLY on a non-vote (Episode 5 #1) — kept in the saved envelope so a lost vote
+      // is diagnosable post-hoc (pure prose vs a buried array) without a non-reproducing re-run.
+      print({ reviewer, backend, model, output, warning: warning ?? null, ...(rawTail ? { rawTail } : {}) });
       break;
     }
     case "scan": {

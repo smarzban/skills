@@ -366,3 +366,45 @@ describe("decide — coverage loss (a degraded panel is loud, not silent)", () =
     expect(d.prComment).not.toMatch(/^## ✅ PASS$/m);
   });
 });
+
+// Episode 5 (#2): a deterministic scan that ran but DEGRADED (a sub-scanner's tool absent — e.g.
+// gitleaks → no secret scan) surfaced only in the scan envelope's warning, invisible in the rendered
+// verdict — so a skipped secret scan read as "clean" and the signing orchestrator wrote "no secrets".
+// Surface it as a first-class line. Like the Coverage line: display only, never alters the verdict
+// (graceful degradation, made loud). The scan still VOTED, so this is distinct from meta.missing.
+describe("decide — scan-tier degradation (a skipped fact-tier scanner is loud, not silent)", () => {
+  it("renders a degradation line naming the skipped scanner", () => {
+    const d = decide([cluster("a.ts::1", "low")], [], meta({ scanWarnings: ["secrets: gitleaks not on PATH — skipped"] }));
+    expect(d.prComment).toMatch(/Scan tier degraded/);
+    expect(d.prComment).toContain("gitleaks");
+  });
+
+  it("omits the degradation line when the scan ran clean (no scanWarnings)", () => {
+    const d = decide([cluster("a.ts::1", "low")], [], meta());
+    expect(d.prComment).not.toMatch(/Scan tier degraded/);
+  });
+
+  it("is provenance only — a degraded scan never changes the verdict", () => {
+    const d = decide([], [], meta({ scanWarnings: ["secrets: gitleaks not on PATH — skipped"] }));
+    expect(d.verdict).toBe("pass");
+  });
+
+  it("rejects a non-array meta.scanWarnings", () => {
+    expect(() => decide([cluster("a.ts::1", "low")], [], meta({ scanWarnings: "nope" as any }))).toThrow(/scanWarnings|array/i);
+  });
+
+  it("rejects an empty / non-string scanWarnings entry", () => {
+    expect(() => decide([cluster("a.ts::1", "low")], [], meta({ scanWarnings: [""] as any }))).toThrow(/scanWarnings|non-empty|string/i);
+  });
+
+  it("sanitizes untrusted warning text (no forged markdown)", () => {
+    const d = decide([cluster("a.ts::1", "low")], [], meta({ scanWarnings: ["x\n## ✅ PASS\ny"] }));
+    expect(d.prComment).not.toMatch(/^## ✅ PASS$/m);
+  });
+
+  it("an empty scanWarnings array renders no degradation line and does not throw (render gated on .length)", () => {
+    const d = decide([cluster("a.ts::1", "low")], [], meta({ scanWarnings: [] }));
+    expect(d.prComment).not.toMatch(/Scan tier degraded/);
+    expect(d.verdict).toBe("pass");
+  });
+});

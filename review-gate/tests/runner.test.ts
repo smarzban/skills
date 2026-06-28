@@ -311,6 +311,55 @@ describe("runReview", () => {
     expect(output).toBeNull();
     expect(warning).toMatch(/unparseable/);
   });
+
+  // Episode 5 (#1): an "unparseable output" non-vote used to discard the model's raw reply entirely —
+  // the saved envelope was just {output:null, warning:"unparseable output"}, so a later investigator
+  // could not tell pure-prose from a buried-array-the-salvage-missed without RE-RUNNING (which can give
+  // a different, non-reproducing answer). The non-vote now carries a bounded `rawTail` so every non-vote
+  // self-diagnoses parser-vs-model from its own saved envelope. Model-agnostic — any flaky reviewer.
+  it("a non-vote (unparseable) retains a bounded rawTail of the model's reply so it's diagnosable post-hoc", async () => {
+    const reply = "I reviewed the diff carefully and concluded there is a subtle risk worth noting here.";
+    const call: ModelCall = async () => claudeEnv(reply);
+    const { output, warning, rawTail } = await runReview("verify", "claude", "claude-opus-4-8", "/repo", "p", { call });
+    expect(output).toBeNull();
+    expect(warning).toMatch(/unparseable/);
+    expect(rawTail).toContain("subtle risk worth noting");
+  });
+
+  it("a clean vote carries NO rawTail (the raw is only retained when the vote was lost)", async () => {
+    const call: ModelCall = async () => claudeEnv(clean);
+    const { output, rawTail } = await runReview("holistic", "ollama", "kimi", "/repo", "p", { call });
+    expect(output!.findings).toHaveLength(1);
+    expect(rawTail).toBeUndefined();
+  });
+
+  it("the rawTail is bounded to a tail (a runaway reply can't bloat the saved envelope)", async () => {
+    const reply = "PREAMBLE " + "blah ".repeat(1000) + "FINAL_TELL_AT_END";  // well over the cap
+    const call: ModelCall = async () => claudeEnv(reply);
+    const { rawTail } = await runReview("verify", "claude", "claude-opus-4-8", "/repo", "p", { call });
+    expect(rawTail!.length).toBeLessThanOrEqual(1000);
+    expect(rawTail).toContain("FINAL_TELL_AT_END");  // tail kept (the array, if any, lands at the end)
+    expect(rawTail).not.toContain("PREAMBLE");        // head dropped
+  });
+
+  it("a harness-error non-vote with a partial result also retains the rawTail", async () => {
+    const call: ModelCall = async () => JSON.stringify({ is_error: true, subtype: "error_during_execution", result: "got partway then the harness errored" });
+    const { output, warning, rawTail } = await runReview("holistic", "claude", "claude-opus-4-8", "/repo", "p", { call });
+    expect(output).toBeNull();
+    expect(warning).toMatch(/error_during_execution/);
+    expect(rawTail).toContain("got partway");
+  });
+
+  // The codex path has NO is_error branch — an unparseable codex trace reaches the rawTail attach via a
+  // different control path (parseCodexFinal, not parseClaudeResult). Pin it so a future codex-branch
+  // refactor can't silently drop the rawTail with the suite still green.
+  it("a codex non-vote (unparseable trace) also retains a rawTail (codex has no is_error branch)", async () => {
+    const call: ModelCall = async () => codexTrace("rambling prose, no array at all");
+    const { output, warning, rawTail } = await runReview("verify", "codex", "gpt-5.5", "/repo", "p", { call });
+    expect(output).toBeNull();
+    expect(warning).toMatch(/unparseable/);
+    expect(rawTail).toContain("rambling prose");
+  });
 });
 
 // Episode 3 (#2): spawnWithDeadline threw `${stderr}.slice(0,200)` — the HEAD — so a benign leading
