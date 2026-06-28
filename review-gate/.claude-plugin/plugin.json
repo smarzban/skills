@@ -1,6 +1,6 @@
 {
   "name": "review-gate",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "description": "Multi-model code-review gate + whole-repo audit. An agent orchestrates holistic reviews across four models; a deterministic spine owns the block/pass verdict and the trust boundary — tool-detected facts (committed secrets, conflict markers) can't be silently dismissed.",
   "author": { "name": "Saeed Marzban" },
   "keywords": ["code-review", "pull-request", "merge-gate", "review-gate", "multi-model", "sign-off", "audit"]
