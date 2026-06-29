@@ -15,6 +15,9 @@ Build the PR title and body from `specs/<feature>/<feature>.md` (and the `SHORTC
   - **Coverage** — the task→criterion map from the `## Plan`: which `T-N` advanced which `AC-N`.
   - **Known compromises** — any `SHORTCUT(T-N)` ceilings recorded in `build-report.md` (the
     deferred-but-bounded simplifications the build accepted); omit the section if there are none.
+  - **Provenance** — when the plan was ingested from a non-canonical source (a Linear issue set, a
+    doc), name the source and carry the gate's mid-chain-entry / `untraced` note, so the reviewer sees
+    what was not vetted upstream; omit when the chain ran in full from `idea`.
   - **Spec** — a link or path to `specs/<feature>/<feature>.md`.
 - Base branch: the project's default (e.g. `main`) unless configured otherwise.
 

@@ -11,8 +11,11 @@ merge review. The terminal artifact is a *reviewed* PR — ship does not merge; 
 or review-gate's own merge step, and promotion belongs to a later `deploy` stage.
 
 <HARD-GATE>
-Precondition: `specs/<feature>/build-report.md` shows every task done and the working tree clean. If
-a task is in-progress or blocked, STOP and route back to `/agent-sdlc:build`. Input is the green
+Precondition: a **green, build-finished branch with a clean working tree** — proven by
+`specs/<feature>/build-report.md` (every task done), or, when no ledger exists (build ran from an
+ingested plan, or the branch was built outside the pipeline), by verifying the branch directly: the
+suite is green and the branch carries the finished work. If a task is in-progress or blocked, STOP and
+route back to `/agent-sdlc:build`. Input is the green
 feature branch plus the spec (for the PR body). Output is a pushed branch, an open PR, and a
 review-gate verdict. ship creates and reviews the PR; it does NOT merge. On a blocking verdict it
 stops and asks before changing anything — a PR is an outward artifact.
@@ -26,7 +29,9 @@ stops and asks before changing anything — a PR is an outward artifact.
 3. **Push** push the feature branch to the remote.
 4. **PR** open it with `gh pr create`. Synthesize the title and body from the spec — the `## Brief`
    summary, the `AC-N` list, the task→criterion coverage, any `SHORTCUT(T-N)` ceilings the build
-   recorded in `build-report.md` (surface the known compromises so the reviewer sees them), and a
+   recorded in `build-report.md` (surface the known compromises so the reviewer sees them), the
+   **provenance** of an ingested plan plus the gate's mid-chain-entry / `untraced` note when the chain
+   was entered partway (so the reviewer sees what was not vetted upstream), and a
    link to the spec. (Mechanics + template in [reference/finishing.md](reference/finishing.md).)
 5. **Linear** if sync is enabled in `.agent-sdlc/config.json`, attach the PR url to the feature's
    issues, post a project status update, and move the project to In Review — via the `linear-sync`
@@ -81,7 +86,8 @@ stops and asks before changing anything — a PR is an outward artifact.
 
 - The suite is verified green and the branch is pushed.
 - A PR is open with a body synthesized from the spec (Brief, `AC-N` list, coverage, spec link) plus
-  any `SHORTCUT(T-N)` ceilings recorded in `build-report.md`.
+  any `SHORTCUT(T-N)` ceilings recorded in `build-report.md` and, when the plan was ingested, its
+  provenance + the gate's mid-chain-entry / `untraced` note.
 - review-gate (or the fallback reviewer) has returned a verdict, posted on the PR.
 - On pass: the PR URL and the ✅ verdict are reported. On block: findings surfaced and the user asked.
 - Linear PR attachment + project status update done where sync is enabled (or skipped cleanly).
@@ -93,7 +99,8 @@ stops and asks before changing anything — a PR is an outward artifact.
 
 ## Conventions
 
-- Reads `build-report.md` and the spec; references `AC-N` and the feature branch.
+- Reads `build-report.md` and the spec; references `AC-N` and the feature branch. When no ledger
+  exists (an ingested-plan or out-of-pipeline build), verifies the branch directly instead.
 - Invokes `/review-gate:review-gate` (a sibling plugin in this marketplace) for the whole-PR review,
   with a portable reviewer-subagent fallback when it is absent.
 - Does not merge and does not clean the worktree on the PR path.
