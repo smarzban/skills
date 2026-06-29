@@ -40,6 +40,13 @@ code rather than during it.
 
 Start with `getting-started`; it routes you to the right stage and states the shared rules.
 
+**Start anywhere.** Run the whole chain, or invoke any stage on its own — each resolves its input
+from whatever you give it (the spec, a prompt, a doc, a Linear issue set, a repo artifact),
+materializes it into the spec with a provenance marker, then runs. A plan already in Linear? `build`
+ingests it, runs the `gate` inline, and builds — you don't have to hand-run the front half first. The
+gate, the per-task TDD loop, and traceability are never skipped; a missing upstream link is marked
+*untraced* and surfaced, never invented.
+
 > **Invocation.** Installed as a plugin, every skill auto-activates when your request matches its
 > `description` — that's the primary path, and you rarely type a command. To invoke one explicitly,
 > use the **mandatory** plugin namespace, e.g. `/agent-sdlc:idea`. Bare names like `/idea` resolve
